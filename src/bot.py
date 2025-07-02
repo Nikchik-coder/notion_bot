@@ -136,7 +136,7 @@ class AudioRecordingBot:
         try:
             with open(audio_file, "rb") as file:
                 transcription = whisper_client.audio.transcriptions.create(
-                    model=os.getenv("WHISPER_MODEL", "whisper-1"),
+                    model=os.getenv("WHISPER_MODEL"),
                     file=file
                 )
             

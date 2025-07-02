@@ -19,7 +19,7 @@ WHISPER_BASE_URL = os.getenv("WHISPER_BASE_URL")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")  
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
-LLM_MODEL = os.getenv("LLM_MODEL", "gemini-pro")  # Default to gemini-pro
+LLM_MODEL = os.getenv("LLM_MODEL") 
 
 # Notion Configuration
 NOTION_API_KEY = os.getenv("NOTION_API_KEY")
@@ -41,7 +41,7 @@ try:
         whisper_client = None
 except Exception as e:
     logger.critical(f"Failed to initialize Whisper client: {e}")
-    whisper_client = None # Ensure it's None if init fails
+    whisper_client = None 
 
 
 # --- Initialize LLM client (Google Gemini or Together) ---
@@ -64,8 +64,7 @@ try:
         llm = None
 except Exception as e:
      logger.critical(f"Failed to initialize LLM client: {e}")
-     llm = None # Ensure it's None if init fails
-
+     llm = None 
 
 async def generate_text():
     return
