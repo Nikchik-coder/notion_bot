@@ -1,6 +1,11 @@
 # Environment variables
 .env
-.env.*
+.env.local
+.env.production
+.env.development
+.env.test
+# But allow .env.example files
+!.env.example
 
 # Output files from code fetcher
 code_output.json
