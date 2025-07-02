@@ -13,9 +13,8 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from utils.utils import whisper_client, llm
-from src.note import create_notion_note
-from src.google_calendar import create_calendar_event_from_data
+from config.config import whisper_client, llm
+from utils.utils import create_calendar_event_from_data, create_notion_note
 
 # Load environment variables
 load_dotenv()
@@ -132,7 +131,7 @@ class AudioRecordingBot:
         if not whisper_client:
             raise Exception("Whisper client not available")
             
-        print("🔄 Transcribing audio...")
+        logger.info("Starting audio transcription...")
         
         try:
             with open(audio_file, "rb") as file:
@@ -142,8 +141,7 @@ class AudioRecordingBot:
                 )
             
             transcribed_text = transcription.text
-            print("✅ Transcription completed!")
-            print(f"📝 Transcription: {transcribed_text[:100]}{'...' if len(transcribed_text) > 100 else ''}")
+            logger.info(f"Audio transcription completed. Text length: {len(transcribed_text)} characters")
             
             return transcribed_text
             
@@ -164,7 +162,7 @@ class AudioRecordingBot:
         if not llm:
             raise Exception("LLM client not available")
             
-        print("🤖 Analyzing text with LLM...")
+        logger.info("Starting LLM analysis of transcribed text...")
         
         # Always use today's date
         today_date = datetime.date.today().isoformat()
@@ -186,12 +184,19 @@ class AudioRecordingBot:
              "notes": "Any additional context or details from the voice note"
          }}
          
-         CRITICAL INSTRUCTIONS:
+         CRITICAL TIME PARSING INSTRUCTIONS:
          - The DATE is ALWAYS today ({today_date}) - do not change this
-         - The user WILL specify a TIME in their voice note - extract it carefully
-         - Look for time mentions like: "at 2 PM", "3:30", "nine thirty", "half past two", "quarter to five"
-         - Convert time to 24-hour format (e.g., "2 PM" becomes "14:00")
-         - If no specific time is mentioned, use "09:00" as default
+         - Look for time mentions like: "at 2 PM", "3:30", "nine thirty", "half past two", "quarter to five", "7 AM", "7:00", "seven o'clock"
+         - Convert ALL times to valid 24-hour format (e.g., "2 PM" = "14:00", "7 AM" = "07:00")
+         - IGNORE any invalid times like "29:00", "25:00", "26:00", or any hour > 23
+         - If you see malformed times like "22:00 PM" or "29:00 p.m.", interpret them logically:
+           * "22:00 PM" should become "22:00" (22:00 is already evening in 24-hour format)
+           * "29:00" is invalid - ignore it
+         - Valid hours: 00-23, Valid minutes: 00-59
+         - If NO valid time is found or all times are garbled/invalid, use these defaults:
+           * start_time: "09:00" (9 AM)
+           * end_time: "10:00" (10 AM)
+         - Common speech patterns: "7 o'clock" = "07:00", "half past 7" = "07:30", "quarter to 8" = "07:45"
          - Create a meaningful TITLE based on what the user is talking about
          - Include all relevant details in the DESCRIPTION
          """
@@ -230,8 +235,7 @@ class AudioRecordingBot:
                     "notes": "Analyzed from voice note"
                 }
             
-            print("✅ LLM analysis completed!")
-            print(f"📋 Event: {event_data.get('title', 'Untitled')}")
+            logger.info(f"LLM analysis completed for event: {event_data.get('title', 'Untitled')}")
             
             return event_data
             
@@ -246,7 +250,7 @@ class AudioRecordingBot:
         Args:
             event_data: Dictionary containing event information
         """
-        print("📝 Creating Notion note...")
+        logger.info("Creating Notion note...")
         
         title = event_data.get('title', 'Voice Note Event')
         
@@ -277,7 +281,7 @@ class AudioRecordingBot:
         
         try:
             create_notion_note(title, content)
-            print("✅ Notion note created successfully!")
+            logger.info("Notion note created successfully from event data")
         except Exception as e:
             logger.error(f"Error creating Notion note: {e}")
             raise
@@ -289,7 +293,7 @@ class AudioRecordingBot:
         Args:
             event_data: Dictionary containing event information
         """
-        print("📅 Creating Google Calendar event...")
+        logger.info("Creating Google Calendar event...")
         
         try:
             # Extract data from the event_data dictionary
@@ -311,7 +315,7 @@ class AudioRecordingBot:
                 location=location,
                 attendees=attendees
             )
-            print("✅ Google Calendar event created with your voice note data!")
+            logger.info("Google Calendar event created successfully from voice note data")
         except Exception as e:
             logger.error(f"Error creating calendar event: {e}")
             raise
@@ -349,7 +353,7 @@ class AudioRecordingBot:
             except Exception as e:
                 logger.warning(f"Could not clean up audio file: {e}")
             
-            print("\n🎉 Voice note processing completed successfully!")
+            logger.info("Voice note processing completed successfully")
             
             return {
                 "transcription": transcribed_text,
